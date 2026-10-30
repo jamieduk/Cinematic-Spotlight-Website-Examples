@@ -1,0 +1,758 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ARGON // Searchlight Intelligence Core</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <!-- FontAwesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                        mono: ['Space Grotesk', 'monospace'],
+                    },
+                    colors: {
+                        void: '#030306',
+                        neonCyan: '#00f3ff',
+                        neonViolet: '#a855f7',
+                        neonBlue: '#3b82f6',
+                        hudBorder: 'rgba(0, 243, 255, 0.2)',
+                    },
+                    animation: {
+                        'pulse-glow': 'pulseGlow 2s infinite ease-in-out',
+                        'radar-spin': 'radarSpin 4s linear infinite',
+                    },
+                    keyframes: {
+                        pulseGlow: {
+                            '0%, 100%': { opacity: '0.4', filter: 'drop-shadow(0 0 5px rgba(0, 243, 255, 0.4))' },
+                            '50%': { opacity: '1', filter: 'drop-shadow(0 0 15px rgba(0, 243, 255, 0.8))' },
+                        },
+                        radarSpin: {
+                            '0%': { transform: 'rotate(0deg)' },
+                            '100%': { transform: 'rotate(360deg)' },
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+
+    <style>
+        body {
+            background-color: #030306;
+            color: #e2e8f0;
+            overflow: hidden;
+            user-select: none;
+        }
+
+        /* Ambient subtle grid background */
+        .bg-grid {
+            background-size: 40px 40px;
+            background-image: 
+                linear-gradient(to right, rgba(255, 255, 255, 0.03) 1px, transparent 1px),
+                linear-gradient(to bottom, rgba(255, 255, 255, 0.03) 1px, transparent 1px);
+        }
+
+        /* Glassmorphism utility */
+        .glass-panel {
+            background: rgba(10, 12, 20, 0.65);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border: 1px solid rgba(0, 243, 255, 0.15);
+            box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.5);
+        }
+
+        /* Hidden layer element styling before illumination */
+        .node-card {
+            transition: border-color 0.3s ease, box-shadow 0.3s ease, transform 0.3s ease;
+        }
+
+        .node-card:hover {
+            transform: translateY(-4px);
+            border-color: rgba(0, 243, 255, 0.6);
+            box-shadow: 0 0 25px rgba(0, 243, 255, 0.25);
+        }
+
+        /* Custom scrollbar for modals */
+        ::-webkit-scrollbar {
+            width: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: rgba(5, 5, 10, 0.8);
+        }
+        ::-webkit-scrollbar-thumb {
+            background: rgba(0, 243, 255, 0.3);
+            border-radius: 3px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: rgba(0, 243, 255, 0.6);
+        }
+
+        /* Spotlight mask canvas positioning */
+        #spotlightCanvas {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            pointer-events: none;
+            z-index: 20;
+        }
+
+        /* Background starfield canvas */
+        #starCanvas {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            pointer-events: none;
+            z-index: 1;
+        }
+    </style>
+</head>
+<body class="font-sans antialiased h-screen w-screen relative">
+
+    <!-- Starfield & Dynamic Grid Backdrop -->
+    <canvas id="starCanvas"></canvas>
+    <div class="fixed inset-0 bg-grid pointer-events-none z-0 opacity-40"></div>
+
+    <!-- Hidden Content Layer (Revealed by Spotlight Canvas Mask & Direct Proximity) -->
+    <main id="contentLayer" class="relative z-10 h-full w-full max-w-7xl mx-auto px-6 py-24 flex flex-col justify-between pointer-events-auto">
+        
+        <!-- Hero Header Node -->
+        <header class="text-center max-w-3xl mx-auto space-y-4 node-item opacity-80 transition-opacity duration-300">
+            <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full border border-neonCyan/30 bg-neonCyan/5 text-neonCyan text-xs font-mono tracking-widest uppercase">
+                <span class="w-2 h-2 rounded-full bg-neonCyan animate-ping"></span>
+                ARGON // DEEP SCAN PROTOCOL
+            </div>
+            <h1 class="text-4xl md:text-6xl font-extrabold tracking-tight font-mono text-transparent bg-clip-text bg-gradient-to-r from-white via-slate-200 to-slate-400">
+                ILLUMINATE THE UNSEEN
+            </h1>
+            <p class="text-slate-400 text-sm md:text-base max-w-xl mx-auto leading-relaxed">
+                Sweeping autonomous radar searchlights through hidden spatial neural nodes. Move cursor or trigger <span class="text-neonCyan font-mono">Auto Scan Mode</span>.
+            </p>
+        </header>
+
+        <!-- Dynamic Site Links / Node Grid -->
+        <section class="grid grid-cols-1 md:grid-cols-3 gap-6 my-auto">
+            
+            <!-- Node Card 1 -->
+            <article data-node-id="quantum" class="node-card glass-panel rounded-xl p-6 cursor-pointer group relative overflow-hidden transition-all duration-300">
+                <div class="absolute -right-6 -bottom-6 w-24 h-24 bg-neonCyan/10 rounded-full blur-xl group-hover:bg-neonCyan/20 transition-all"></div>
+                <div class="flex items-center justify-between mb-4">
+                    <span class="font-mono text-xs text-neonCyan tracking-wider">01 // CORE SYSTEM</span>
+                    <i class="fa-solid font-mono text-slate-500 group-hover:text-neonCyan transition-colors fa-microchip text-lg"></i>
+                </div>
+                <h3 class="text-xl font-bold font-mono text-white mb-2 group-hover:text-neonCyan transition-colors">Quantum Mesh</h3>
+                <p class="text-slate-400 text-xs leading-relaxed mb-4">
+                    Decentralized quantum compute nodes operating across sub-zero photonic routing arrays.
+                </p>
+                <div class="flex items-center text-xs font-mono text-neonCyan/80 group-hover:text-neonCyan">
+                    <span>INITIALIZE LINK</span>
+                    <i class="fa-solid fa-arrow-right ml-2 text-xs transform group-hover:translate-x-1 transition-transform"></i>
+                </div>
+            </article>
+
+            <!-- Node Card 2 -->
+            <article data-node-id="neural" class="node-card glass-panel rounded-xl p-6 cursor-pointer group relative overflow-hidden transition-all duration-300">
+                <div class="absolute -right-6 -bottom-6 w-24 h-24 bg-neonViolet/10 rounded-full blur-xl group-hover:bg-neonViolet/20 transition-all"></div>
+                <div class="flex items-center justify-between mb-4">
+                    <span class="font-mono text-xs text-neonViolet tracking-wider">02 // MEMORY VAULT</span>
+                    <i class="fa-solid font-mono text-slate-500 group-hover:text-neonViolet transition-colors fa-brain text-lg"></i>
+                </div>
+                <h3 class="text-xl font-bold font-mono text-white mb-2 group-hover:text-neonViolet transition-colors">Neural Vault</h3>
+                <p class="text-slate-400 text-xs leading-relaxed mb-4">
+                    Synaptic archival storage indexing multi-dimensional AI embeddings and memory streams.
+                </p>
+                <div class="flex items-center text-xs font-mono text-neonViolet/80 group-hover:text-neonViolet">
+                    <span>EXPLORE ARCHIVE</span>
+                    <i class="fa-solid fa-arrow-right ml-2 text-xs transform group-hover:translate-x-1 transition-transform"></i>
+                </div>
+            </article>
+
+            <!-- Node Card 3 -->
+            <article data-node-id="sentinel" class="node-card glass-panel rounded-xl p-6 cursor-pointer group relative overflow-hidden transition-all duration-300">
+                <div class="absolute -right-6 -bottom-6 w-24 h-24 bg-neonBlue/10 rounded-full blur-xl group-hover:bg-neonBlue/20 transition-all"></div>
+                <div class="flex items-center justify-between mb-4">
+                    <span class="font-mono text-xs text-neonBlue tracking-wider">03 // DEFENSE SHIELD</span>
+                    <i class="fa-solid font-mono text-slate-500 group-hover:text-neonBlue transition-colors fa-shield-halved text-lg"></i>
+                </div>
+                <h3 class="text-xl font-bold font-mono text-white mb-2 group-hover:text-neonBlue transition-colors">Deep Sentinel</h3>
+                <p class="text-slate-400 text-xs leading-relaxed mb-4">
+                    Autonomous cyber-defense layer neutralizing threat vectors in real-time zero trust domains.
+                </p>
+                <div class="flex items-center text-xs font-mono text-neonBlue/80 group-hover:text-neonBlue">
+                    <span>ACCESS MATRIX</span>
+                    <i class="fa-solid fa-arrow-right ml-2 text-xs transform group-hover:translate-x-1 transition-transform"></i>
+                </div>
+            </article>
+
+            <!-- Node Card 4 -->
+            <article data-node-id="horizon" class="node-card glass-panel rounded-xl p-6 cursor-pointer group relative overflow-hidden transition-all duration-300">
+                <div class="absolute -right-6 -bottom-6 w-24 h-24 bg-emerald-500/10 rounded-full blur-xl group-hover:bg-emerald-500/20 transition-all"></div>
+                <div class="flex items-center justify-between mb-4">
+                    <span class="font-mono text-xs text-emerald-400 tracking-wider">04 // TELEMETRY</span>
+                    <i class="fa-solid font-mono text-slate-500 group-hover:text-emerald-400 transition-colors fa-satellite text-lg"></i>
+                </div>
+                <h3 class="text-xl font-bold font-mono text-white mb-2 group-hover:text-emerald-400 transition-colors">Horizon Protocol</h3>
+                <p class="text-slate-400 text-xs leading-relaxed mb-4">
+                    Interstellar telemetry relay receiving long-range subspace signal echoes.
+                </p>
+                <div class="flex items-center text-xs font-mono text-emerald-400/80 group-hover:text-emerald-400">
+                    <span>TUNE SIGNAL</span>
+                    <i class="fa-solid fa-arrow-right ml-2 text-xs transform group-hover:translate-x-1 transition-transform"></i>
+                </div>
+            </article>
+
+            <!-- Node Card 5 -->
+            <article data-node-id="anomaly" class="node-card glass-panel rounded-xl p-6 cursor-pointer group relative overflow-hidden transition-all duration-300">
+                <div class="absolute -right-6 -bottom-6 w-24 h-24 bg-amber-500/10 rounded-full blur-xl group-hover:bg-amber-500/20 transition-all"></div>
+                <div class="flex items-center justify-between mb-4">
+                    <span class="font-mono text-xs text-amber-400 tracking-wider">05 // SYNTHESIS</span>
+                    <i class="fa-solid font-mono text-slate-500 group-hover:text-amber-400 transition-colors fa-atom text-lg"></i>
+                </div>
+                <h3 class="text-xl font-bold font-mono text-white mb-2 group-hover:text-amber-400 transition-colors">Anomaly Engine</h3>
+                <p class="text-slate-400 text-xs leading-relaxed mb-4">
+                    Generative chaos accelerator modeling non-Euclidean quantum fluctuations.
+                </p>
+                <div class="flex items-center text-xs font-mono text-amber-400/80 group-hover:text-amber-400">
+                    <span>EXECUTE SIMULATION</span>
+                    <i class="fa-solid fa-arrow-right ml-2 text-xs transform group-hover:translate-x-1 transition-transform"></i>
+                </div>
+            </article>
+
+            <!-- Node Card 6 -->
+            <article data-node-id="cipher" class="node-card glass-panel rounded-xl p-6 cursor-pointer group relative overflow-hidden transition-all duration-300">
+                <div class="absolute -right-6 -bottom-6 w-24 h-24 bg-rose-500/10 rounded-full blur-xl group-hover:bg-rose-500/20 transition-all"></div>
+                <div class="flex items-center justify-between mb-4">
+                    <span class="font-mono text-xs text-rose-400 tracking-wider">06 // CRYPTO VAULT</span>
+                    <i class="fa-solid font-mono text-slate-500 group-hover:text-rose-400 transition-colors fa-key text-lg"></i>
+                </div>
+                <h3 class="text-xl font-bold font-mono text-white mb-2 group-hover:text-rose-400 transition-colors">Cipher Core</h3>
+                <p class="text-slate-400 text-xs leading-relaxed mb-4">
+                    Zero-knowledge cryptographic key distribution for sovereign identity nodes.
+                </p>
+                <div class="flex items-center text-xs font-mono text-rose-400/80 group-hover:text-rose-400">
+                    <span>DECRYPT KEYS</span>
+                    <i class="fa-solid fa-arrow-right ml-2 text-xs transform group-hover:translate-x-1 transition-transform"></i>
+                </div>
+            </article>
+
+        </section>
+
+        <!-- Footer Coordinates -->
+        <footer class="flex flex-col sm:flex-row items-center justify-between border-t border-slate-800/80 pt-6 text-xs font-mono text-slate-500">
+            <div class="flex items-center gap-4 mb-2 sm:mb-0">
+                <span>LAT: 45.0921° N</span>
+                <span>LONG: 122.9011° W</span>
+                <span class="text-neonCyan">SECTOR 09</span>
+            </div>
+            <div>ARGON INTELLIGENCE OS // VER 4.0.8</div>
+        </footer>
+    </main>
+
+    <!-- Top Tactical HUD Controller (Fixed Z-Index 30 above spotlight canvas) -->
+    <header class="fixed top-0 left-0 w-full z-30 p-4 pointer-events-auto">
+        <div class="max-w-7xl mx-auto glass-panel rounded-2xl p-4 flex flex-wrap items-center justify-between gap-4 border border-neonCyan/20">
+            
+            <!-- Left Branding & System Indicators -->
+            <div class="flex items-center gap-4">
+                <div class="relative flex items-center justify-center w-10 h-10 rounded-xl bg-neonCyan/10 border border-neonCyan/40 text-neonCyan">
+                    <i class="fa-solid fa-radar text-lg animate-spin" style="animation-duration: 8s;"></i>
+                </div>
+                <div>
+                    <div class="flex items-center gap-2">
+                        <span class="font-mono font-bold text-sm tracking-widest text-white">ARGON // SEARCHLIGHT</span>
+                        <span id="statusBadge" class="text-[10px] font-mono px-2 py-0.5 rounded bg-neonCyan/20 text-neonCyan border border-neonCyan/40">
+                            MANUAL
+                        </span>
+                    </div>
+                    <p class="text-[11px] text-slate-400 font-mono">SPOTLIGHT BEAM & Node Revealer</p>
+                </div>
+            </div>
+
+            <!-- Central HUD Controls -->
+            <div class="flex items-center flex-wrap gap-3">
+                <!-- Auto Sweep Toggle -->
+                <button id="toggleSweepBtn" class="flex items-center gap-2 px-4 py-2 rounded-xl bg-neonCyan/10 hover:bg-neonCyan/20 border border-neonCyan/40 text-neonCyan text-xs font-mono transition-all active:scale-95">
+                    <i class="fa-solid fa-compass"></i>
+                    <span id="sweepBtnText">ENABLE AUTO SCAN</span>
+                </button>
+
+                <!-- Audio Toggle -->
+                <button id="toggleAudioBtn" class="flex items-center gap-2 px-3 py-2 rounded-xl bg-slate-800/60 hover:bg-slate-700/60 border border-slate-700 text-slate-300 text-xs font-mono transition-all">
+                    <i id="audioIcon" class="fa-solid fa-volume-xmark text-slate-400"></i>
+                    <span>AUDIO</span>
+                </button>
+
+                <!-- Searchlight Beam Radius Slider -->
+                <div class="hidden sm:flex items-center gap-2 px-3 py-1.5 rounded-xl bg-slate-900/60 border border-slate-800 text-xs font-mono">
+                    <span class="text-slate-400">BEAM:</span>
+                    <input type="range" id="radiusSlider" min="120" max="380" value="220" class="w-20 accent-neonCyan cursor-pointer">
+                    <span id="radiusVal" class="text-neonCyan w-8 text-right">220px</span>
+                </div>
+            </div>
+
+        </div>
+    </header>
+
+    <!-- Canvas Spotlight Mask Overlay -->
+    <canvas id="spotlightCanvas"></canvas>
+
+    <!-- Node Interactive Details Modal Overlay -->
+    <div id="nodeModal" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md opacity-0 pointer-events-none transition-opacity duration-300">
+        <div class="glass-panel w-full max-w-xl rounded-2xl p-6 sm:p-8 border border-neonCyan/40 transform scale-95 transition-transform duration-300 relative" id="modalCard">
+            <!-- Close Button -->
+            <button id="closeModalBtn" class="absolute top-4 right-4 w-8 h-8 rounded-full bg-slate-800/80 hover:bg-slate-700 flex items-center justify-center text-slate-300 hover:text-white transition-colors">
+                <i class="fa-solid fa-xmark"></i>
+            </button>
+
+            <!-- Modal Content Injector -->
+            <div id="modalContent"></div>
+        </div>
+    </div>
+
+    <!-- JavaScript Logic Core -->
+    <script>
+        // --- System State & Configuration ---
+        const state = {
+            spotlight: {
+                x: window.innerWidth / 2,
+                y: window.innerHeight / 2,
+                targetX: window.innerWidth / 2,
+                targetY: window.innerHeight / 2,
+                radius: 220,
+                intensity: 0.92, // Opacity of dark overlay
+                glowColor: 'rgba(0, 243, 255, 0.4)'
+            },
+            autoSweep: false,
+            sweepAngle: 0,
+            audioEnabled: false,
+            nodesData: {
+                quantum: {
+                    title: "01 // QUANTUM MESH",
+                    subtitle: "PHOTONIC COMPUTE INFRASTRUCTURE",
+                    icon: "fa-microchip",
+                    color: "text-neonCyan",
+                    description: "The Quantum Mesh operates as an ultra-low latency mesh routing network. Utilizing entangled photon channels, it processes complex multi-dimensional data models across distributed edge nodes without cryptographic degradation.",
+                    metrics: [
+                        { label: "LATENCY", val: "0.002 ms" },
+                        { label: "ENTANGLEMENT RATIO", val: "99.98%" },
+                        { label: "ACTIVE NODES", val: "14,092" }
+                    ]
+                },
+                neural: {
+                    title: "02 // NEURAL VAULT",
+                    subtitle: "SYNAPTIC KNOWLEDGE STORAGE",
+                    icon: "fa-brain",
+                    color: "text-neonViolet",
+                    description: "High-density vector database designed for real-time memory retrieval in autonomous agent systems. Synthesizes millions of token streams with instant contextual indexing.",
+                    metrics: [
+                        { label: "INDEX RECALL", val: "99.99%" },
+                        { label: "VECTOR DENSITY", val: "1536 Dim" },
+                        { label: "CAPACITY", val: "8.4 PB" }
+                    ]
+                },
+                sentinel: {
+                    title: "03 // DEEP SENTINEL",
+                    subtitle: "ZERO-TRUST CYBER DEFENSE",
+                    icon: "fa-shield-halved",
+                    color: "text-neonBlue",
+                    description: "Continuous real-time threat detection engine powered by generative adversary models. Isolates anomaly bursts and mitigates zero-day vectors instantly.",
+                    metrics: [
+                        { label: "THREAT MITIGATION", val: "< 1ms" },
+                        { label: "INTEGRITY", val: "100.0%" },
+                        { label: "ACTIVE SHIELDS", val: "ONLINE" }
+                    ]
+                },
+                horizon: {
+                    title: "04 // HORIZON PROTOCOL",
+                    subtitle: "SUBSPACE SIGNAL RELAY",
+                    icon: "fa-satellite",
+                    color: "text-emerald-400",
+                    description: "Long-range deep space communication array receiving and decoding subspace telemetry telemetry pulses across vast cosmic distances.",
+                    metrics: [
+                        { label: "SIGNAL FREQUENCY", val: "1420 MHz" },
+                        { label: "BANDWIDTH", val: "120 Tbps" },
+                        { label: "RECEPTION", val: "OPTIMAL" }
+                    ]
+                },
+                anomaly: {
+                    title: "05 // ANOMALY ENGINE",
+                    subtitle: "QUANTUM FLUTTER GENERATOR",
+                    icon: "fa-atom",
+                    color: "text-amber-400",
+                    description: "A stochastic simulation engine modeling non-linear quantum phase shifts and chaotic systemic reactions for predictive stress testing.",
+                    metrics: [
+                        { label: "ENTROPY RATE", val: "1.618 Hz" },
+                        { label: "SIM ACCURACY", val: "98.4%" },
+                        { label: "STRESS STAGE", val: "LEVEL 4" }
+                    ]
+                },
+                cipher: {
+                    title: "06 // CIPHER CORE",
+                    subtitle: "POST-QUANTUM CRYPTOGRAPHY",
+                    icon: "fa-key",
+                    color: "text-rose-400",
+                    description: "Lattice-based encryption module safeguarding cross-chain identity signatures and sovereign execution nodes.",
+                    metrics: [
+                        { label: "ALGORITHM", val: "Kyber-1024" },
+                        { label: "SECURITY LEVEL", val: "256-Bit Quantum" },
+                        { label: "STATUS", val: "LOCKED" }
+                    ]
+                }
+            }
+        };
+
+        // --- DOM Elements ---
+        const spotlightCanvas = document.getElementById('spotlightCanvas');
+        const spotCtx = spotlightCanvas.getContext('2d');
+        const starCanvas = document.getElementById('starCanvas');
+        const starCtx = starCanvas.getContext('2d');
+
+        const radiusSlider = document.getElementById('radiusSlider');
+        const radiusVal = document.getElementById('radiusVal');
+        const sweepBtn = document.getElementById('toggleSweepBtn');
+        const sweepBtnText = document.getElementById('sweepBtnText');
+        const statusBadge = document.getElementById('statusBadge');
+        const toggleAudioBtn = document.getElementById('toggleAudioBtn');
+        const audioIcon = document.getElementById('audioIcon');
+
+        const nodeCards = document.querySelectorAll('.node-card');
+        const nodeModal = document.getElementById('nodeModal');
+        const modalCard = document.getElementById('modalCard');
+        const modalContent = document.getElementById('modalContent');
+        const closeModalBtn = document.getElementById('closeModalBtn');
+
+        // --- Web Audio API Synth Engine ---
+        let audioCtx = null;
+
+        function initAudio() {
+            if (!audioCtx) {
+                audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+            }
+        }
+
+        function playSciFiTone(type = 'hover') {
+            if (!state.audioEnabled || !audioCtx) return;
+
+            try {
+                const osc = audioCtx.createOscillator();
+                const gain = audioCtx.createGain();
+                osc.connect(gain);
+                gain.connect(audioCtx.destination);
+
+                const now = audioCtx.currentTime;
+
+                if (type === 'hover') {
+                    osc.type = 'sine';
+                    osc.frequency.setValueAtTime(320, now);
+                    osc.frequency.exponentialRampToValueAtTime(640, now + 0.08);
+                    gain.gain.setValueAtTime(0.04, now);
+                    gain.gain.exponentialRampToValueAtTime(0.001, now + 0.08);
+                    osc.start(now);
+                    osc.stop(now + 0.08);
+                } else if (type === 'click') {
+                    osc.type = 'triangle';
+                    osc.frequency.setValueAtTime(800, now);
+                    osc.frequency.exponentialRampToValueAtTime(200, now + 0.15);
+                    gain.gain.setValueAtTime(0.08, now);
+                    gain.gain.exponentialRampToValueAtTime(0.001, now + 0.15);
+                    osc.start(now);
+                    osc.stop(now + 0.15);
+                } else if (type === 'sweep') {
+                    osc.type = 'sine';
+                    osc.frequency.setValueAtTime(150, now);
+                    osc.frequency.linearRampToValueAtTime(220, now + 0.3);
+                    gain.gain.setValueAtTime(0.02, now);
+                    gain.gain.exponentialRampToValueAtTime(0.001, now + 0.3);
+                    osc.start(now);
+                    osc.stop(now + 0.3);
+                }
+            } catch(e) {
+                console.log(e);
+            }
+        }
+
+        // --- Canvas Resize Handling ---
+        function resizeCanvases() {
+            spotlightCanvas.width = window.innerWidth;
+            spotlightCanvas.height = window.innerHeight;
+            starCanvas.width = window.innerWidth;
+            starCanvas.height = window.innerHeight;
+            initStars();
+        }
+        window.addEventListener('resize', resizeCanvases);
+
+        // --- Ambient Background Stars/Particles ---
+        let stars = [];
+        function initStars() {
+            stars = [];
+            const count = Math.floor((window.innerWidth * window.innerHeight) / 12000);
+            for (let i = 0; i < count; i++) {
+                stars.push({
+                    x: Math.random() * starCanvas.width,
+                    y: Math.random() * starCanvas.height,
+                    size: Math.random() * 1.5 + 0.5,
+                    alpha: Math.random() * 0.7 + 0.2,
+                    speed: Math.random() * 0.2 + 0.05
+                });
+            }
+        }
+
+        function drawStars() {
+            starCtx.clearRect(0, 0, starCanvas.width, starCanvas.height);
+            starCtx.fillStyle = '#ffffff';
+            stars.forEach(star => {
+                starCtx.globalAlpha = star.alpha;
+                starCtx.beginPath();
+                starCtx.arc(star.x, star.y, star.size, 0, Math.PI * 2);
+                starCtx.fill();
+
+                // Subtle float upward
+                star.y -= star.speed;
+                if (star.y < 0) star.y = starCanvas.height;
+            });
+        }
+
+        // --- Interactive Spotlight Rendering Engine ---
+        function drawSpotlight() {
+            const w = spotlightCanvas.width;
+            const h = spotlightCanvas.height;
+
+            spotCtx.clearRect(0, 0, w, h);
+
+            // 1. Draw Pitch-black Pitch Overlay
+            spotCtx.fillStyle = `rgba(3, 3, 6, ${state.spotlight.intensity})`;
+            spotCtx.fillRect(0, 0, w, h);
+
+            // 2. Clear out Light Hole using Destination-Out composition
+            spotCtx.save();
+            spotCtx.globalCompositeOperation = 'destination-out';
+
+            const rad = state.spotlight.radius;
+            const x = state.spotlight.x;
+            const y = state.spotlight.y;
+
+            const radialGradient = spotCtx.createRadialGradient(x, y, 0, x, y, rad);
+            radialGradient.addColorStop(0, 'rgba(0, 0, 0, 1)');
+            radialGradient.addColorStop(0.65, 'rgba(0, 0, 0, 0.85)');
+            radialGradient.addColorStop(1, 'rgba(0, 0, 0, 0)');
+
+            spotCtx.fillStyle = radialGradient;
+            spotCtx.beginPath();
+            spotCtx.arc(x, y, rad, 0, Math.PI * 2);
+            spotCtx.fill();
+            spotCtx.restore();
+
+            // 3. Draw Ambient Spotlight Beam Glow & Projector Ring Overlay
+            spotCtx.save();
+            const glowGrad = spotCtx.createRadialGradient(x, y, rad * 0.7, x, y, rad * 1.05);
+            glowGrad.addColorStop(0, 'rgba(0, 243, 255, 0)');
+            glowGrad.addColorStop(0.8, 'rgba(0, 243, 255, 0.15)');
+            glowGrad.addColorStop(1, 'rgba(0, 243, 255, 0)');
+
+            spotCtx.fillStyle = glowGrad;
+            spotCtx.beginPath();
+            spotCtx.arc(x, y, rad * 1.05, 0, Math.PI * 2);
+            spotCtx.fill();
+
+            // Crosshair Target Indicator
+            spotCtx.strokeStyle = 'rgba(0, 243, 255, 0.25)';
+            spotCtx.lineWidth = 1;
+            
+            // Outer Ring
+            spotCtx.beginPath();
+            spotCtx.arc(x, y, 20, 0, Math.PI * 2);
+            spotCtx.stroke();
+
+            // Center Target Cross
+            spotCtx.beginPath();
+            spotCtx.moveTo(x - 8, y);
+            spotCtx.lineTo(x + 8, y);
+            spotCtx.moveTo(x, y - 8);
+            spotCtx.lineTo(x, y + 8);
+            spotCtx.stroke();
+
+            spotCtx.restore();
+        }
+
+        // --- Proximity Revealer Logic for Elements ---
+        function updateNodeVisibility() {
+            const sx = state.spotlight.x;
+            const sy = state.spotlight.y;
+            const rad = state.spotlight.radius;
+
+            nodeCards.forEach(card => {
+                const rect = card.getBoundingClientRect();
+                const cx = rect.left + rect.width / 2;
+                const cy = rect.top + rect.height / 2;
+
+                const dist = Math.hypot(cx - sx, cy - sy);
+
+                // Reveal items when spotlight approaches
+                if (dist < rad + 60) {
+                    const factor = 1 - Math.min(dist / (rad + 60), 1);
+                    card.style.opacity = Math.max(0.15, factor).toFixed(2);
+                    card.style.borderColor = `rgba(0, 243, 255, ${Math.max(0.1, factor * 0.8).toFixed(2)})`;
+                } else {
+                    card.style.opacity = '0.08';
+                    card.style.borderColor = 'rgba(0, 243, 255, 0.05)';
+                }
+            });
+        }
+
+        // --- Main Animation Loop (60 FPS) ---
+        function animate() {
+            // Smooth Interpolation towards Target Position
+            if (state.autoSweep) {
+                state.sweepAngle += 0.015;
+                const centerX = window.innerWidth / 2;
+                const centerY = window.innerHeight / 2;
+                const radiusX = window.innerWidth * 0.35;
+                const radiusY = window.innerHeight * 0.25;
+
+                // Lissajous curve auto-sweep pattern
+                state.spotlight.targetX = centerX + Math.sin(state.sweepAngle) * radiusX;
+                state.spotlight.targetY = centerY + Math.sin(state.sweepAngle * 1.5) * radiusY;
+            }
+
+            state.spotlight.x += (state.spotlight.targetX - state.spotlight.x) * 0.1;
+            state.spotlight.y += (state.spotlight.targetY - state.spotlight.y) * 0.1;
+
+            drawStars();
+            drawSpotlight();
+            updateNodeVisibility();
+
+            requestAnimationFrame(animate);
+        }
+
+        // --- Mouse & Touch Events ---
+        window.addEventListener('mousemove', (e) => {
+            if (!state.autoSweep) {
+                state.spotlight.targetX = e.clientX;
+                state.spotlight.targetY = e.clientY;
+            }
+        });
+
+        window.addEventListener('touchmove', (e) => {
+            if (e.touches.length > 0 && !state.autoSweep) {
+                state.spotlight.targetX = e.touches[0].clientX;
+                state.spotlight.targetY = e.touches[0].clientY;
+            }
+        });
+
+        // --- Control Handlers ---
+        radiusSlider.addEventListener('input', (e) => {
+            state.spotlight.radius = parseInt(e.target.value);
+            radiusVal.textContent = `${state.spotlight.radius}px`;
+        });
+
+        sweepBtn.addEventListener('click', () => {
+            initAudio();
+            state.autoSweep = !state.autoSweep;
+            
+            if (state.autoSweep) {
+                sweepBtn.classList.add('bg-neonCyan/30', 'border-neonCyan');
+                sweepBtnText.textContent = "STOP SCAN";
+                statusBadge.textContent = "AUTO-SWEEP";
+                statusBadge.className = "text-[10px] font-mono px-2 py-0.5 rounded bg-neonViolet/20 text-neonViolet border border-neonViolet/40 animate-pulse";
+                playSciFiTone('sweep');
+            } else {
+                sweepBtn.classList.remove('bg-neonCyan/30', 'border-neonCyan');
+                sweepBtnText.textContent = "ENABLE AUTO SCAN";
+                statusBadge.textContent = "MANUAL";
+                statusBadge.className = "text-[10px] font-mono px-2 py-0.5 rounded bg-neonCyan/20 text-neonCyan border border-neonCyan/40";
+            }
+        });
+
+        toggleAudioBtn.addEventListener('click', () => {
+            initAudio();
+            state.audioEnabled = !state.audioEnabled;
+            if (state.audioEnabled) {
+                audioIcon.className = "fa-solid fa-volume-high text-neonCyan";
+                toggleAudioBtn.classList.add('border-neonCyan/50');
+                playSciFiTone('hover');
+            } else {
+                audioIcon.className = "fa-solid fa-volume-xmark text-slate-400";
+                toggleAudioBtn.classList.remove('border-neonCyan/50');
+            }
+        });
+
+        // --- Interactive Modal Dialog logic ---
+        nodeCards.forEach(card => {
+            card.addEventListener('mouseenter', () => playSciFiTone('hover'));
+            card.addEventListener('click', () => {
+                playSciFiTone('click');
+                const nodeId = card.getAttribute('data-node-id');
+                const data = state.nodesData[nodeId];
+
+                if (data) {
+                    modalContent.innerHTML = `
+                        <div class="flex items-center gap-3 mb-4">
+                            <div class="w-10 h-10 rounded-xl bg-slate-800/80 border border-slate-700 flex items-center justify-center ${data.color}">
+                                <i class="fa-solid ${data.icon} text-lg"></i>
+                            </div>
+                            <div>
+                                <h2 class="text-xl font-bold font-mono text-white">${data.title}</h2>
+                                <p class="text-xs font-mono text-slate-400">${data.subtitle}</p>
+                            </div>
+                        </div>
+
+                        <p class="text-sm text-slate-300 leading-relaxed mb-6 font-sans">
+                            ${data.description}
+                        </p>
+
+                        <div class="grid grid-cols-3 gap-3 p-4 rounded-xl bg-slate-950/60 border border-slate-800 font-mono mb-6">
+                            ${data.metrics.map(m => `
+                                <div>
+                                    <div class="text-[10px] text-slate-500">${m.label}</div>
+                                    <div class="text-xs font-bold ${data.color}">${m.val}</div>
+                                </div>
+                            `).join('')}
+                        </div>
+
+                        <div class="flex items-center justify-end gap-3">
+                            <button onclick="closeModal()" class="px-5 py-2 rounded-xl bg-neonCyan/10 hover:bg-neonCyan/20 border border-neonCyan/40 text-neonCyan text-xs font-mono transition-all">
+                                CLOSE PROTOCOL
+                            </button>
+                        </div>
+                    `;
+
+                    nodeModal.classList.remove('opacity-0', 'pointer-events-none');
+                    modalCard.classList.remove('scale-95');
+                    modalCard.classList.add('scale-100');
+                }
+            });
+        });
+
+        function closeModal() {
+            nodeModal.classList.add('opacity-0', 'pointer-events-none');
+            modalCard.classList.remove('scale-100');
+            modalCard.classList.add('scale-95');
+        }
+
+        closeModalBtn.addEventListener('click', closeModal);
+        nodeModal.addEventListener('click', (e) => {
+            if (e.target === nodeModal) closeModal();
+        });
+
+        // Initialize and Launch Animation
+        window.onload = function() {
+            resizeCanvases();
+            animate();
+        };
+    </script>
+</body>
+</html>
